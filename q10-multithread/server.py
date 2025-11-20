@@ -1,31 +1,22 @@
-import socket
-import threading
-
-# Handle each client in its own thread
-def handle_client(conn, addr):
-    print(f"[NEW CONNECTION] {addr} connected.")
-
-    while True:
-        data = conn.recv(1024).decode()
-        if not data:
-            break
-        print(f"[{addr}] sent:", data)
-        conn.send(data.encode())
-    conn.close()
-    print(f"[DISCONNECTED] {addr} disconnected.")
+from socketserver import ThreadingMixIn
+from socketserver import BaseRequestHandler
+from socketserver import TCPServer
 
 
-def start_server():
-    server = socket.socket(socket.AF_INET, socket.SOCK_STREAM)
-    server.bind(("localhost", 8000))
-    server.listen()
+class Handler(BaseRequestHandler):
+    def handle(self):
+        addr =self.client_address
+        print(f"[NEW ] {addr} Conneted" )
+        while(data := self.request.recv(1024)):
+            print(f" {addr} : {data}")
+            self.request.sendall(data)
+        print(f"[LEFT] {addr} Disconected")
+    
 
-    print("🟢 Server running on port 8000...")
-    print("Waiting for clients...\n")
-    while True:
-        conn, addr = server.accept()
-        thread = threading.Thread(target=handle_client, args=(conn, addr))
-        thread.start()
-        print(f"[ACTIVE THREADS] {threading.active_count() - 1}")  # minus main thread
-if __name__ == "__main__":
-    start_server()
+class Server(ThreadingMixIn,TCPServer):pass
+
+if __name__=="__main__":
+    with Server(("localhost",8000),Handler) as s:
+        print(f"Connected on port 8000..")
+        s.serve_forever()
+
